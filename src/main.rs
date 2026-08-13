@@ -65,6 +65,34 @@ fn handle_client(stream: TcpStream) {
     println!("{}", &socket.port());
 }
 
+struct UnwrappedCidr {
+    ip: Ipv4Addr,
+    prefix: u8,
+}
+
+fn unwrap_cidr(cidr: String) -> Result<UnwrappedCidr, Box<dyn std::error::Error>> {
+    if let Some((ip_str, prefix_str)) = cidr.split_once("/") {
+        let ip: Ipv4Addr = ip_str
+            .parse()
+            .map_err(|e| format!("Invalid IP address: {}", e))?;
+        let prefix: u8 = prefix_str
+            .parse()
+            .map_err(|e| format!("Invalid prefix: {}", e))?;
+        if prefix > 32 {
+            return Err("prefix must be <= 32".into());
+        }
+        Ok(UnwrappedCidr { ip, prefix })
+    } else {
+        Err("Invalid CIDR format".into())
+    }
+}
+
+fn cidr_prefix_to_mask(prefix: u8) -> Ipv4Addr {
+    let mask: u32 = u32::MAX << (32 - prefix); // shift maximum binary to left by 32-prefix location
+    let ipv4_mask: Ipv4Addr = Ipv4Addr::from(mask);
+    return ipv4_mask;
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
@@ -86,7 +114,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Commands::Subnet { cidr } => {
-            todo!("parse '{cidr}', compute network/broadcast/host range/count")
+            let unwrapped = unwrap_cidr(cidr)?;
+            println!(
+                "IP: {} Mask: {}",
+                unwrapped.ip,
+                cidr_prefix_to_mask(unwrapped.prefix)
+            );
+            Ok(())
         }
         Commands::Dig { hostname } => {
             todo!("craft DNS query packet for '{hostname}', send over UDP, parse response")
