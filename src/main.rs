@@ -70,6 +70,14 @@ struct UnwrappedCidr {
     prefix: u8,
 }
 
+fn to_u32(ip: Ipv4Addr) -> u32 {
+    u32::from(ip)
+}
+
+fn to_ipv4(u: u32) -> Ipv4Addr {
+    Ipv4Addr::from(u)
+}
+
 fn unwrap_cidr(cidr: String) -> Result<UnwrappedCidr, Box<dyn std::error::Error>> {
     if let Some((ip_str, prefix_str)) = cidr.split_once("/") {
         let ip: Ipv4Addr = ip_str
