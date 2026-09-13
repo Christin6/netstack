@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 mod echo_server;
 mod subnet;
+mod tcp_client;
 
 #[derive(Parser)]
 #[command(name = "netstack", version, about, long_about = None)]
@@ -20,7 +21,7 @@ enum Commands {
 
     // Create a TCP client that connects to a server and sends a message
     CreateTcpClient {
-        #[arg(short, long, default_value = "localhost")]
+        #[arg(long, default_value = "localhost")]
         host: String,
         #[arg(short, long, default_value_t = 7878)]
         port: u16,
@@ -57,8 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Commands::CreateTcpClient { host, port } => {
-            // Implementation for creating a TCP client
-            todo!("create TCP client to connect to '{host}:{port}' and send a message")
+            tcp_client::create_tcp_client(host, port)?;
+            Ok(())
         }
         Commands::Subnet { cidr } => {
             subnet::compute_subnet_info(cidr)?;
