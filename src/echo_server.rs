@@ -1,13 +1,9 @@
 use socket2::{Domain, Socket, Type};
+use std::io::Read;
 use std::{net::{IpAddr, SocketAddr, TcpListener, TcpStream}};
 
-fn handle_client(stream: TcpStream) {
-    // handle a single client connection
-    // enum SocketAddr
-    let socket: SocketAddr = stream.peer_addr().unwrap();
-
-    // socket.ip() returns IpAddr enum
-    match socket.ip() {
+fn print_incoming_device_info(ip_addr: IpAddr, port: u16) {
+    match ip_addr {
         // pull out the value of IpAddr enum
         IpAddr::V4(original_ip) => {
             // IpAddr::V4 wraps an Ipv4Addr directly
@@ -23,8 +19,38 @@ fn handle_client(stream: TcpStream) {
             }
         }
     }
+    println!("{}", port);
+}
 
-    println!("{}", &socket.port());
+fn handle_client(mut stream: TcpStream) {
+    // handle a single client connection
+    // enum SocketAddr
+    let socket: SocketAddr = stream.peer_addr().unwrap();
+
+    // socket.ip() returns IpAddr enum, socket.port() returns u16
+    print_incoming_device_info(socket.ip(), socket.port());
+
+    // read from the stream and print the message
+    let mut buffer = [0; 512];
+
+    loop {
+        match stream.read(&mut buffer) {
+            Ok(0) => {
+                // connection closed
+                println!("\n---\n");
+                break;
+            }
+            Ok(n) => {
+                // print the message received from the client
+                let message = String::from_utf8_lossy(&buffer[..n]);
+                println!("{}", message);
+            }
+            Err(e) => {
+                println!("Failed to read from stream: {}", e);
+                break;
+            }
+        }
+    }
 }
 
 pub fn echo_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
