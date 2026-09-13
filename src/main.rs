@@ -18,6 +18,14 @@ enum Commands {
         port: u16,
     },
 
+    // Create a TCP client that connects to a server and sends a message
+    CreateTcpClient {
+        #[arg(short, long, default_value = "localhost")]
+        host: String,
+        #[arg(short, long, default_value_t = 7878)]
+        port: u16,
+    },
+
     // Compute subnet information for a CIDR
     Subnet {
         cidr: String,
@@ -31,7 +39,7 @@ enum Commands {
     // Scan a host for open ports
     Scan {
         target: String, //target IP or hostname
-        #[arg(long, default_value = "1-1000")]
+        #[arg(long, default_value = "1-1000")] // no short because -p is already used for singular port
         ports: String,
     },
 
@@ -47,6 +55,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::EchoServer { port } => {
             echo_server::echo_server(port)?;
             Ok(())
+        }
+        Commands::CreateTcpClient { host, port } => {
+            // Implementation for creating a TCP client
+            todo!("create TCP client to connect to '{host}:{port}' and send a message")
         }
         Commands::Subnet { cidr } => {
             subnet::compute_subnet_info(cidr)?;
