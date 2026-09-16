@@ -3,6 +3,8 @@ use clap::{Parser, Subcommand};
 mod echo_server;
 mod subnet;
 mod tcp_client;
+mod udp_client;
+mod echo_udp_server;
 
 #[derive(Parser)]
 #[command(name = "netstack", version, about, long_about = None)]
@@ -19,8 +21,22 @@ enum Commands {
         port: u16,
     },
 
+    // Start a UDP echo server
+    EchoUdpServer {
+        #[arg(short, long, default_value_t = 7878)]
+        port: u16,
+    },
+
     // Create a TCP client that connects to a server and sends a message
     CreateTcpClient {
+        #[arg(long, default_value = "localhost")]
+        host: String,
+        #[arg(short, long, default_value_t = 7878)]
+        port: u16,
+    },
+
+    // Create a UDP client that sends a message to a server
+    CreateUdpClient {
         #[arg(long, default_value = "localhost")]
         host: String,
         #[arg(short, long, default_value_t = 7878)]
@@ -57,8 +73,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             echo_server::echo_server(port)?;
             Ok(())
         }
+        Commands::EchoUdpServer { port } => {
+            echo_udp_server::echo_udp_server(port)?;
+            Ok(())
+        }
         Commands::CreateTcpClient { host, port } => {
             tcp_client::create_tcp_client(host, port)?;
+            Ok(())
+        }
+        Commands::CreateUdpClient { host, port } => {
+            udp_client::create_udp_client(host, port)?;
             Ok(())
         }
         Commands::Subnet { cidr } => {

@@ -12,5 +12,13 @@ pub fn create_udp_client(host: String, port: u16) -> Result<(), Box<dyn std::err
             return Err(format!("Failed to parse address {host} on port {port}: {error}").into());
         }
     };
+
+    let message =  "Hello, UDP server!";
+
+    match socket.send_to(message.as_bytes(), &address.into()) {
+        Ok(_) => println!("Message sent successfully to {}", address),
+        Err(e) => return Err(format!("Failed to send message: {}", e).into()),
+    }
+
     Ok(())
 }
