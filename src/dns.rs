@@ -15,7 +15,7 @@ struct DnsHeader {
     arcount: u16,
 }
 
-fn to_bytes(header: &DnsHeader) -> Vec<u8> {
+fn header_to_bytes(header: &DnsHeader) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(12);
     bytes.extend_from_slice(&header.id.to_be_bytes());
     let flags = ((header.qr as u16) << 15)
@@ -34,7 +34,32 @@ fn to_bytes(header: &DnsHeader) -> Vec<u8> {
     bytes
 }
 
-pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
+// https://www.rfc-editor.org/info/rfc1035/#section-4.1.2
+fn hostname_to_bytes(string: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let labels: Vec<&str> = string.split('.').collect();
+    let mut bytes = Vec::new();
+    for label in labels {
+        if label.len() > 63 {
+            return Err("Label is too long".into());
+        }
+        bytes.push(label.len() as u8);
+        bytes.extend_from_slice(label.as_bytes());
+    }
+    bytes.push(0); // Null terminator for the last label
+    Ok(bytes)
+}
+
+fn question_to_bytes(hostname: &str, qtype: u16, qclass: u16) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut bytes = hostname_to_bytes(hostname)?;
+    bytes.extend_from_slice(&qtype.to_be_bytes());
+    bytes.extend_from_slice(&qclass.to_be_bytes());
+    Ok(bytes)
+}
+
+const QTYPE_A: u16 = 1;
+const QCLASS_IN: u16 = 1;
+
+fn build_dns_query(hostname: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let header = DnsHeader {
         id: 0x1234,
         qr: false,
@@ -51,8 +76,14 @@ pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
         arcount: 0,
     };
 
-    let header_bytes = to_bytes(&header);
-    println!("DNS Header Bytes: {:?}", header_bytes);
+    let mut query = header_to_bytes(&header);
+    let question = question_to_bytes(hostname, QTYPE_A, QCLASS_IN)?;
+    query.extend_from_slice(&question);
+    Ok(query)
+}
 
+pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
+    let query = build_dns_query(&hostname)?;
+    println!("DNS Query Bytes: {:?}", query);
     Ok(())
 }
