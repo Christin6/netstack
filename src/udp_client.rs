@@ -22,12 +22,12 @@ fn create_udp(host: String, port: u16) -> Result<UdpSocket, Box<dyn std::error::
     Ok(UdpSocket { socket, address })
 }
 
-fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let owned_address = socket2::SockAddr::from(address.to_owned());
     
     match socket.connect(&owned_address) {
         Ok(_) => {
-            match socket.send(message.as_bytes()) {
+            match socket.send(message) {
                 Ok(_) => {
                     let mut buffer: [MaybeUninit<u8>; 512] = [MaybeUninit::uninit(); 512];
                     match socket.recv(&mut buffer) {
@@ -35,7 +35,7 @@ fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &str) -> Res
                             let bytes = unsafe {
                                 std::slice::from_raw_parts(buffer.as_ptr() as *const u8, n)
                             };
-                            let response = String::from_utf8_lossy(bytes).to_string();
+                            let response: Vec<u8> = bytes.to_vec();
                             Ok(response)
                         }
                         Err(e) => Err(format!("Failed to receive response: {}", e).into()),
@@ -51,7 +51,11 @@ fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &str) -> Res
 pub fn create_udp_client(host: String, port: u16) -> Result<(), Box<dyn std::error::Error>> {
     let UdpSocket { socket, address } = create_udp(host, port)?;
 
-    send_and_receive(&socket, &address, "hello server")?;
+    let message = "hello server".as_bytes();
+    let response = send_and_receive(&socket, &address, &message)?;
+
+    let response_str = String::from_utf8_lossy(&response);
+    println!("Received response: {}", response_str);
 
     Ok(())
 }
