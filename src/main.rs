@@ -42,6 +42,8 @@ enum Commands {
         host: String,
         #[arg(short, long, default_value_t = 7878)]
         port: u16,
+        #[arg(short, long, default_value = "Hello server")]
+        message: Vec<u8>,
     },
 
     // Compute subnet information for a CIDR
@@ -82,8 +84,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             tcp_client::create_tcp_client(host, port)?;
             Ok(())
         }
-        Commands::CreateUdpClient { host, port } => {
-            udp_client::create_udp_client(host, port)?;
+        Commands::CreateUdpClient { host, port, message } => {
+            udp_client::create_udp_client(host, port, &message)?;
             Ok(())
         }
         Commands::Subnet { cidr } => {

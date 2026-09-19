@@ -2,12 +2,12 @@ use socket2::{Domain, Socket, Type};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::mem::MaybeUninit;
 
-struct UdpSocket {
-    socket: Socket,
-    address: SocketAddr,
+pub struct UdpSocket {
+    pub socket: Socket,
+    pub address: SocketAddr,
 }
 
-fn create_udp(host: String, port: u16) -> Result<UdpSocket, Box<dyn std::error::Error>> {
+pub fn create_udp(host: String, port: u16) -> Result<UdpSocket, Box<dyn std::error::Error>> {
     let socket: Socket = Socket::new(Domain::IPV4, Type::DGRAM, None)?;
     let address: SocketAddr = match format!("{host}:{port}").to_socket_addrs() {
         Ok(mut addrs) => match addrs.next() {
@@ -24,7 +24,7 @@ fn create_udp(host: String, port: u16) -> Result<UdpSocket, Box<dyn std::error::
 
 // message is [u8] as a slice so it can take both slice and vector as input.
 // Rust has deref coercion, so a Vec<u8> can be borrowed as &[u8] automatically.
-fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+pub fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let owned_address = socket2::SockAddr::from(address.to_owned());
     
     match socket.connect(&owned_address) {
@@ -50,10 +50,9 @@ fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &[u8]) -> Re
     }
 }
 
-pub fn create_udp_client(host: String, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+pub fn create_udp_client(host: String, port: u16, message: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
     let UdpSocket { socket, address } = create_udp(host, port)?;
 
-    let message = "hello server".as_bytes();
     let response = send_and_receive(&socket, &address, &message)?;
 
     let response_str = String::from_utf8_lossy(&response);

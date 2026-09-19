@@ -1,3 +1,6 @@
+use std::time::SystemTime;
+use crate::udp_client;
+
 // https://www.rfc-editor.org/info/rfc1035/#section-4.1.1
 struct DnsHeader {
     id: u16,
@@ -60,8 +63,14 @@ const QTYPE_A: u16 = 1;
 const QCLASS_IN: u16 = 1;
 
 fn build_dns_query(hostname: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    // use the current time as a simple transaction ID (vulnerable against DNS cache poisoning)
+    let id_from_time: u16 = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u16;
+
     let header = DnsHeader {
-        id: 0x1234,
+        id: id_from_time,
         qr: false,
         opcode: 0,
         aa: false,
@@ -85,5 +94,11 @@ fn build_dns_query(hostname: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>
 pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
     let query = build_dns_query(&hostname)?;
     println!("DNS Query Bytes: {:?}", query);
+
+    let socket: Result<udp_client::UdpSocket, Box<dyn std::error::Error>> = udp_client::create_udp("8.8.8.8".to_owned(), 53);
+    let udp_client::UdpSocket {socket, address} = socket.unwrap();
+    let response = udp_client::send_and_receive(&socket, &address, &query);
+    println!("{:?}", response?);
+
     Ok(())
 }
