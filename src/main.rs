@@ -5,6 +5,7 @@ mod subnet;
 mod tcp_client;
 mod udp_client;
 mod echo_udp_server;
+mod dns;
 
 #[derive(Parser)]
 #[command(name = "netstack", version, about, long_about = None)]
@@ -90,7 +91,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Commands::Dig { hostname } => {
-            todo!("craft DNS query packet for '{hostname}', send over UDP, parse response")
+            dns::dig(hostname)?;
+            Ok(())
         }
         Commands::Scan { target, ports } => {
             todo!("parse '{ports}' range, attempt connections to '{target}', report state")

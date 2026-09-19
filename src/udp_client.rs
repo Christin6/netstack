@@ -22,6 +22,8 @@ fn create_udp(host: String, port: u16) -> Result<UdpSocket, Box<dyn std::error::
     Ok(UdpSocket { socket, address })
 }
 
+// message is [u8] as a slice so it can take both slice and vector as input.
+// Rust has deref coercion, so a Vec<u8> can be borrowed as &[u8] automatically.
 fn send_and_receive(socket: &Socket, address: &SocketAddr, message: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let owned_address = socket2::SockAddr::from(address.to_owned());
     
