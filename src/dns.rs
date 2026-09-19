@@ -99,9 +99,8 @@ pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
     let query = build_dns_query(&hostname)?;
     println!("DNS Query Bytes: {:?}", query);
 
-    let socket: Result<udp_client::UdpSocket, Box<dyn std::error::Error>> =
-        udp_client::create_udp("8.8.8.8".to_owned(), 53);
-    let udp_client::UdpSocket { socket, address } = socket.unwrap();
+    let socket = udp_client::create_udp("8.8.8.8".to_owned(), 53);
+    let udp_client::UdpSocket { socket, address } = socket?;
     let response = udp_client::send_and_receive(&socket, &address, &query);
 
     let response_vec: Vec<u8> = response?;
@@ -114,12 +113,12 @@ pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
 
     match r_code {
         0 => println!("Code {}: No error condition", r_code),
-        1 => println!("Code {}: Format error", r_code),
-        2 => println!("Code {}: Server failure", r_code),
-        3 => println!("Code {}: Name error", r_code),
-        4 => println!("Code {}: Not implemented", r_code),
-        5 => println!("Code {}: Refused", r_code),
-        _ => println!("Code {}: Unknown response code", r_code),
+        1 => return Err(format!("Code {}: Format error", r_code).into()),
+        2 => return Err(format!("Code {}: Server failure", r_code).into()),
+        3 => return Err(format!("Code {}: Name error", r_code).into()),
+        4 => return Err(format!("Code {}: Not implemented", r_code).into()),
+        5 => return Err(format!("Code {}: Refused", r_code).into()),
+        _ => return Err(format!("Code {}: Unknown response code", r_code).into()),
     }
 
     // ancount
@@ -141,7 +140,7 @@ pub fn dig(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
     let type_value: u16 = u16::from_be_bytes(type_field);
     match type_value {
         1 => println!("Ip is type {}: IPv4", type_value),
-        _ => println!("Ip is type {}: tf", type_value)
+        _ => println!("Ip is type {}: not supposed to be that, btw", type_value)
     }
 
     // r data, only give one ip address
